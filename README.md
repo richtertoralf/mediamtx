@@ -51,6 +51,38 @@ sudo systemctl daemon-reload
 sudo systemctl enable mediamtx
 sudo systemctl start mediamtx
 ```
+## simple Webseite
+Mit dem mediamtx-Server kannst du, dank WebRTC und iframe, dir jetzt ganz einfach eine Webseite bauen, auf der deine Streams zu sehen sind.
+```
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+            grid-gap: 10px;
+        }
+        iframe {
+            width: 100%;
+            height: 300px;
+            border: 1px solid #ccc;
+        }
+    </style>
+    <title>WebRTC+iframe</title>
+</head>
+<body>
+    <iframe src="http://172.16.90.15:8889/cam55" scrolling="no"></iframe>
+    <iframe src="http://172.16.90.15:8889/cam56" scrolling="no"></iframe>
+    <iframe src="http://172.16.90.15:8889/cam57" scrolling="no"></iframe>
+    <iframe src="http://172.16.90.15:8889/cam58" scrolling="no"></iframe>
+</body>
+</html>
+```
 
 # datarhei restreamer
 Der Restreamer ist eine Streaming-Server-Lösung mit Benutzeroberfläche um RTMP- oder SRT-Streams zu YouTube, Twitch, Facebook, Vimeo oder andere Streaming-Lösungen wie Wowza weiterzuleiten. Zusätzlich besteht die Möglichkeit, den Stream auch direkt vom Server, per RTMP oder SRT abzurufen und es gibt eine einfache Webseite, wo Besucher den den Stream direkt anschauen können.    
