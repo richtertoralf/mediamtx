@@ -20,6 +20,18 @@ Verschieben:
 sudo mv mediamtx /usr/local/bin/
 sudo mv mediamtx.yml /usr/local/etc/
 ```
+### Konfiguration
+#### RTSP-Stream einer IP-Kamera holen
+```
+sudo nano /usr/local/etc/mediamtx.yml
+```
+Am Ende der Konfigurationsdatei, im Abschnitt `Path settings` z.B. das Folgende einfügen:
+```
+paths:
+  cam55:
+    source: rtsp://admin:admin@192.168.95.55:554/1/h264major
+```
+## systemd
 Service einrichten:
 ```
 sudo tee /etc/systemd/system/mediamtx.service >/dev/null << EOF
