@@ -52,7 +52,7 @@ sudo systemctl enable mediamtx
 sudo systemctl start mediamtx
 ```
 ## simple Webseite
-Mit dem mediamtx-Server kannst du, dank WebRTC und iframe, dir jetzt ganz einfach eine Webseite bauen, auf der deine Streams zu sehen sind.
+Mit dem mediamtx-Server kannst du dir jetzt, dank WebRTC und iframe, ganz einfach eine Webseite bauen, auf der deine Streams zu sehen sind. Im folgenden Beispiel verwende ich private IP-Adressen für ein lokales Netzwerk:  
 ```
 <!DOCTYPE html>
 <html lang="de">
