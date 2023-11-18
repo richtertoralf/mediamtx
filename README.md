@@ -30,6 +30,8 @@ Am Ende der Konfigurationsdatei, im Abschnitt `Path settings` z.B. das Folgende 
 paths:
   cam55:
     source: rtsp://admin:admin@192.168.95.55:554/1/h264major
+  cam56:
+    source: rtsp://admin:admin@192.168.95.56:554/1/h264major
 ```
 ## systemd
 Service einrichten:
