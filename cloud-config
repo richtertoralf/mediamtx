@@ -1,0 +1,76 @@
+#cloud-config
+package_upgrade: true
+
+packages:
+  - nginx
+  - wireguard
+
+write_files:
+  # Konfigurationsdatei für den Nginx-Webserver
+  - path: /etc/nginx/sites-available/webserver.conf
+    permissions: '0644'
+    content: |
+      # Nginx-Serverblock für den Webserver
+      server {
+          listen 80 default_server;
+          listen [::]:80 default_server;
+
+          root /var/www/html;
+          index index.html index.htm index.nginx-debian.html;
+
+          server_name _;
+
+          # Konfiguration der Standard-Website
+          location / {
+              try_files $uri $uri/ =404;
+          }
+      }
+
+  # HTML-Datei für die Standardwebsite
+  - path: /var/www/html/index.html
+    permissions: '0644'
+    content: |
+      <!DOCTYPE html>
+      <html lang="de">
+
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+              body {
+                  margin: 0;
+                  padding: 0;
+                  display: grid;
+                  grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+                  grid-gap: 10px;
+              }
+
+              iframe {
+                  width: 100%;
+                  height: 300px;
+                  border: 1px solid #ccc;
+              }
+          </style>
+          <title>WebRTC+iframe</title>
+      </head>
+
+      <body>
+          <!-- Einbettung von vier IFrames für WebRTC-Streams -->
+          <iframe src="http://172.16.90.15:8889/cam54" scrolling="no"></iframe>
+          <iframe src="http://172.16.90.15:8889/cam55" scrolling="no"></iframe>
+          <iframe src="http://172.16.90.15:8889/cam56" scrolling="no"></iframe>
+          <iframe src="http://172.16.90.15:8889/cam57" scrolling="no"></iframe>
+      </body>
+
+      </html>
+
+runcmd:
+  # Entfernen der Standard-Nginx-Konfiguration und Aktivieren der benutzerdefinierten Konfiguration
+  - rm /etc/nginx/sites-enabled/default*
+  - ln -s /etc/nginx/sites-available/webserver.conf /etc/nginx/sites-enabled/
+
+  # Neustart des Nginx-Dienstes nach der Konfigurationsänderung
+  - systemctl restart nginx
+
+  # Anpassen der Berechtigungen für den Webordner
+  - chown -R www-data:www-data /var/www/html/
