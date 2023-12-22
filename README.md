@@ -21,6 +21,16 @@ sudo mv mediamtx /usr/local/bin/
 sudo mv mediamtx.yml /usr/local/etc/
 ```
 ### Konfiguration
+#### Portverwendung
+| Protokoll                                  | Port | Art   |
+|--------------------------------------------|------|-------|
+| RTSP (Real Time Streaming Protocol)         | 8554 | TCP   |
+| HTTP für WebRTC (Web Real-Time Communication)| 8889 | TCP   |
+| HTTP für HLS (HTTP Live Streaming)           | 8888 | TCP   |
+| SRT (Secure Reliable Transport)             | 8890 | UDP   |
+| RTMP (Real-Time Messaging Protocol)          | 1935 | TCP   |
+| UDP für RTSP (Real Time Streaming Protocol) | 8189 | UDP   |
+
 #### RTSP-Stream einer IP-Kamera holen
 ```
 sudo nano /usr/local/etc/mediamtx.yml
