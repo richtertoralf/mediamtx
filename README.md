@@ -32,7 +32,20 @@ Diese Ports müssen in der Firewall je nach Verwendung und Konfiguration frei ge
 | SRT (Secure Reliable Transport)             | 8890 | UDP   |
 | RTMP (Real-Time Messaging Protocol)          | 1935 | TCP   |
 | UDP für RTSP (Real Time Streaming Protocol) | 8189 | UDP   |
-
+#### Konfigurationsdatei
+Die solltest du jetzt hier finden:
+```
+/usr/local/etc/mediamtx.yml
+```
+Damit nicht irgendjemand Streams über den Server veröffentlichen kann, sollte ein Passwort gesetzt werden. Das kann z.B. so erfolgen:
+```
+# Default path settings
+# Settings in "pathDefaults" are applied anywhere,
+# unless they are overridden in "paths".
+pathDefaults:
+  publishUser: myuser
+  publishPass: mypass
+```
 ### Nutzungsbeispiele - Streams zum Server "pushen"
 An den Stellen, wo im Folgenden "localhost" steht, sollte jeweils die IP des mediamtx-Servers eingetragen werden.
 #### SRT-Streams zum mediamtx-Server schicken
