@@ -1,7 +1,7 @@
 Vor ein paar Jahren haben wir unseren Streamingserver für RTMP, SRT und RTSP noch selber geschrieben. Dazu haben wir ffmpeg und nginx mit dem rtmp-Modul genutzt. Um SRT zu nutzen musste ffmpeg noch extra compiliert und für den RaspberryPi optimiert werden.  Inzwischen gibt es in der OpenSource-Welt fürs Streamen von Videos richtig viele gute Tools. Eins davon ist der **mediamtx Mediaserver**. Ein weiteres sehr gutes Tool ist der **datarhei Restreamer**.
 
 # mediamtx
-mediamtx Mediaserver - SRT-/WebRTC-/RTSP-/RTMP-/LL-HLS-Medienserver und Medien-Proxy, der das Lesen, Veröffentlichen, Proxyen und Aufzeichnen von Video- und Audiostreams ermöglicht.  
+MediaMTX (ehemals rtsp-simple-server ) ist ein gebrauchsfertiger und unabhängiger Echtzeit-Medienserver und Medien-Proxy, der das Veröffentlichen, Lesen, Proxyen und Aufzeichnen von Video- und Audiostreams ermöglicht. Er ist als „Medienrouter“ ohne GUI konzipiert, der Medienströme von einem Ende zum anderen weiterleitet. 
 
 ## Quelle
 - https://github.com/bluenviron/mediamtx
