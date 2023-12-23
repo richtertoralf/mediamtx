@@ -24,8 +24,8 @@ sudo mv mediamtx.yml /usr/local/etc/
 ### Konfiguration
 #### Portverwendung
 Diese Ports müssen in der Firewall je nach Verwendung und Konfiguration frei gegeben werden. Standartports sind je nach Protokoll:
-|-Protokoll                                  | Port | Art   |
-|--------------------------------------------|------|-------|
+|Protokoll                                  | Port | Art   |
+|:---|:---:|:---:|
 | RTSP (Real Time Streaming Protocol)         | 8554 | TCP   |
 | HTTP für WebRTC (Web Real-Time Communication)| 8889 | TCP   |
 | HTTP für HLS (HTTP Live Streaming)           | 8888 | TCP   |
