@@ -1,4 +1,4 @@
-Vor ein paar Jahren haben wir unseren Streamingserver für SRT und RTSP noch selber geschrieben. Dazu haben wir ffmpeg und nginx mit dem rtmp-Modul genutzt. Um SRT zu nutzen musste ffmpeg noch extra compiliert und für den RaspberryPi optimiert werden.  Inzwischen gibt es in der OpenSource-Welt fürs Streamen von Videos richtig viele gute Tools. Eins davon ist der mediamtx Mediaserver. Ein weiteres sehr gutes Tool ist der datarhei Restreamer.
+Vor ein paar Jahren haben wir unseren Streamingserver für RTMP, SRT und RTSP noch selber geschrieben. Dazu haben wir ffmpeg und nginx mit dem rtmp-Modul genutzt. Um SRT zu nutzen musste ffmpeg noch extra compiliert und für den RaspberryPi optimiert werden.  Inzwischen gibt es in der OpenSource-Welt fürs Streamen von Videos richtig viele gute Tools. Eins davon ist der **mediamtx Mediaserver**. Ein weiteres sehr gutes Tool ist der **datarhei Restreamer**.
 
 # mediamtx
 mediamtx Mediaserver - SRT-/WebRTC-/RTSP-/RTMP-/LL-HLS-Medienserver und Medien-Proxy, der das Lesen, Veröffentlichen, Proxyen und Aufzeichnen von Video- und Audiostreams ermöglicht.  
@@ -9,6 +9,7 @@ mediamtx Mediaserver - SRT-/WebRTC-/RTSP-/RTMP-/LL-HLS-Medienserver und Medien-P
 ## Installation
 Download der Binärdateien, z.B.:
 ```
+# Version prüfen !
 wget https://github.com/bluenviron/mediamtx/releases/download/v1.3.0/mediamtx_v1.3.0_linux_arm64v8.tar.gz
 ```
 Entpacken:
@@ -22,7 +23,8 @@ sudo mv mediamtx.yml /usr/local/etc/
 ```
 ### Konfiguration
 #### Portverwendung
-| Protokoll                                  | Port | Art   |
+Diese Ports müssen in der Firewall je nach Verwendung und Konfiguration frei gegeben werden. Standartports sind je nach Protokoll:
+|-Protokoll                                  | Port | Art   |
 |--------------------------------------------|------|-------|
 | RTSP (Real Time Streaming Protocol)         | 8554 | TCP   |
 | HTTP für WebRTC (Web Real-Time Communication)| 8889 | TCP   |
@@ -31,7 +33,29 @@ sudo mv mediamtx.yml /usr/local/etc/
 | RTMP (Real-Time Messaging Protocol)          | 1935 | TCP   |
 | UDP für RTSP (Real Time Streaming Protocol) | 8189 | UDP   |
 
+### Nutzungsbeispiele
+An den Stellen, wo im Folgenden "localhost" steht, sollte jeweils die IP des mediamtx-Servers eingetragen werden.
+#### SRT-Streams zum mediamtx-Server schicken
+Die Sender, z.B. HDMI-Encoder oder Smartphones (mit Larix Broadcaster App) oder RaspberryPis, senden den Stream als "caller" zum Server. "mystream" im folgenden Beispiel ist ein selbsgewählter Name, z.B. "Encoder61".
+```
+srt://localhost:8890?streamid=publish:mystream&pkt_size=1316
+```
+#### RTMP-Streams zum Server schicken
+Der Sender, z.B. OBS-Studio oder eine Drohne senden einen Stream zum Server.
+```
+rtmp://localhost/mystream
+```
+Besser ist es, die eingebaute Authentifizierung zu nutzen. Falls die Authentifizierung aktiviert ist, können Anmeldeinformationen mithilfe der Abfrageparameter `user` und `pass` an den Server übergeben werden. Dies geschieht in der Konfigurationsdatei: /usr/local/etc/mediamtx.yml
+```
+rtmp://localhost/mystream?user=myuser&pass=mypass
+```
+#### WebRTC-Streams von OBS Studio (seit Version 30.0) zum mediamtx-Server schicken
+```
+Plattform: WHIP
+Server: http://localhost:8889/obs-14/whip?user=myuser&pass=mypass
+```
 #### RTSP-Stream einer IP-Kamera holen
+Das nutze ich, um von IP-Kameras im lokalen Netzwerk die RTSP-Streams zu holen. Anschließens kann ich sie mir z.B. per WebRTC via Browserquelle in OBS Studio mit sehr geringer Verzögerung ansehen.
 ```
 sudo nano /usr/local/etc/mediamtx.yml
 ```
