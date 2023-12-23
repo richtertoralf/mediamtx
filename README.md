@@ -33,7 +33,7 @@ Diese Ports müssen in der Firewall je nach Verwendung und Konfiguration frei ge
 | RTMP (Real-Time Messaging Protocol)          | 1935 | TCP   |
 | UDP für RTSP (Real Time Streaming Protocol) | 8189 | UDP   |
 
-### Nutzungsbeispiele
+### Nutzungsbeispiele - Streams zum Server "pushen"
 An den Stellen, wo im Folgenden "localhost" steht, sollte jeweils die IP des mediamtx-Servers eingetragen werden.
 #### SRT-Streams zum mediamtx-Server schicken
 Die Sender, z.B. HDMI-Encoder oder Smartphones (mit Larix Broadcaster App) oder RaspberryPis, senden den Stream als "caller" zum Server. "mystream" im folgenden Beispiel ist ein selbsgewählter Name, z.B. "Encoder61".
@@ -67,7 +67,17 @@ paths:
   cam56:
     source: rtsp://admin:admin@192.168.95.56:554/1/h264major
 ```
-## systemd
+### Nutzungsbeispiele - Streams vom Server holen
+#### Streams vom Server holen und in einem Browser anzeigen oder als Browser-Quelle in OBS einbinden
+Ich nutze gern WebRTC, da ich mit diesem Protokoll aktuell die geringsten Latenzen habe.
+```
+http://localhost:8889/cam55
+http://localhost:8889/mystream
+```
+#### weitere Beispiele
+gibt es hier: https://github.com/bluenviron/mediamtx
+
+## systemd Dienst einrichten
 Service einrichten:
 ```
 sudo tee /etc/systemd/system/mediamtx.service >/dev/null << EOF
