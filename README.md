@@ -53,6 +53,27 @@ Die Sender, z.B. HDMI-Encoder oder Smartphones (mit Larix Broadcaster App) oder 
 ```
 srt://localhost:8890?streamid=publish:mystream&pkt_size=1316
 ```
+##### Testbild generieren und per SRT zum Server pushen
+inklusive der Authentifizierung mit User und Passwort
+siehe letzte Zeile
+```
+ffmpeg \
+  -loglevel info \
+  -f lavfi \
+  -i testsrc \
+  -f lavfi \
+  -i sine=frequency=1000 \
+  -filter_complex "[0:v]scale=1920:1080,format=yuv420p[v];[1:a]anull[aout]" \
+  -map "[v]" -map "[aout]" \
+  -r 25
+  -vcodec libx264 \
+  -profile:v baseline \
+  -pix_fmt yuv420p -b:v 500k \
+  -c:a mp3 -b:a 160k -ar 44100 \
+  -f mpegts \
+  -y 'srt://xxx.xxx.xxx.xxx:8890?streamid=publish:testbild:user:password&pkt_size=1316'
+```
+
 #### RTMP-Streams zum Server schicken
 Der Sender, z.B. OBS-Studio oder eine Drohne senden einen Stream zum Server.
 ```
