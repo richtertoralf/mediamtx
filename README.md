@@ -105,8 +105,19 @@ paths:
 #### Streams vom Server holen und in einem Browser anzeigen oder als Browser-Quelle in OBS einbinden
 Ich nutze gern WebRTC, da ich mit diesem Protokoll aktuell die geringsten Latenzen habe.
 ```
-http://localhost:8889/cam55
 http://localhost:8889/mystream
+```
+weitere Varianten:
+```
+weitere Alternativen, z.B. als **Medienquelle** in OBS Studio eingebunden, sind,
+SRT:
+srt://localhost:8890?streamid=read:mystream
+RTSP:
+rtsp://localhost:8554/mystream
+RTMP:
+rtmp://localhost/mystream
+und HLS als **Browserquelle**:
+http://localhost:8888/mystream
 ```
 #### weitere Beispiele
 gibt es hier: https://github.com/bluenviron/mediamtx
