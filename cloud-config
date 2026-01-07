@@ -1,41 +1,86 @@
 #cloud-config
+#
+# Cloud-Init Konfiguration für einen einfachen Web-Viewer
+# zur Anzeige von MediaMTX-Streams (WebRTC oder HLS) per iframe.
+#
+# Gedacht für:
+# - LAN- oder VPN-Umgebungen (z. B. WireGuard)
+# - internes Monitoring / Remote-Produktion
+# - keine öffentliche Internet-Exponierung
+#
+# Dieses Setup stellt KEIN Streaming bereit,
+# sondern zeigt bereits existierende Streams an.
+#
+
+# System beim ersten Start aktualisieren
 package_upgrade: true
 
+# Benötigte Pakete:
+# - nginx: einfacher Webserver für die Viewer-Seite
+# - wireguard: optionales VPN, um private IPs erreichbar zu machen
 packages:
   - nginx
   - wireguard
 
 write_files:
-  # Konfigurationsdatei für den Nginx-Webserver
+  # ------------------------------------------------------------
+  # NGINX-Konfiguration
+  # ------------------------------------------------------------
+  # Ein minimaler Serverblock, der eine statische HTML-Seite
+  # unter Port 80 ausliefert.
+  #
+  # Der Webserver dient nur als "Rahmen" (iframe-Container)
+  # für MediaMTX-WebRTC- oder HLS-Streams.
+  #
   - path: /etc/nginx/sites-available/webserver.conf
     permissions: '0644'
     content: |
-      # Nginx-Serverblock für den Webserver
       server {
+          # HTTP auf IPv4 und IPv6
           listen 80 default_server;
           listen [::]:80 default_server;
 
+          # Dokumentenroot
           root /var/www/html;
           index index.html index.htm index.nginx-debian.html;
 
+          # Catch-all (kein Domain-Name erforderlich)
           server_name _;
 
-          # Konfiguration der Standard-Website
+          # Statische Dateien ausliefern
           location / {
               try_files $uri $uri/ =404;
           }
       }
 
-  # HTML-Datei für die Standardwebsite
+  # ------------------------------------------------------------
+  # HTML-Seite: Stream-Übersicht
+  # ------------------------------------------------------------
+  # Diese Seite zeigt mehrere MediaMTX-Streams gleichzeitig
+  # in einem responsiven Grid an.
+  #
+  # Die Streams selbst kommen NICHT von nginx,
+  # sondern direkt von MediaMTX:
+  #   - WebRTC: Port 8889
+  #   - alternativ HLS: Port 8888
+  #
+  # Die IP-Adressen sind private LAN-/VPN-Adressen
+  # und setzen Konnektivität über WireGuard oder LAN voraus.
+  #
   - path: /var/www/html/index.html
     permissions: '0644'
     content: |
       <!DOCTYPE html>
       <html lang="de">
-
       <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+          <!--
+            Einfaches Grid-Layout:
+            - mehrere Streams nebeneinander
+            - keine JS-Abhängigkeiten
+          -->
           <style>
               body {
                   margin: 0;
@@ -51,26 +96,41 @@ write_files:
                   border: 1px solid #ccc;
               }
           </style>
-          <title>WebRTC+iframe</title>
+
+          <title>MediaMTX Stream Monitor</title>
       </head>
 
       <body>
-          <!-- Einbettung von vier IFrames für WebRTC-Streams -->
+          <!--
+            Einbettung von MediaMTX-WebRTC-Streams.
+            Jeder iframe ruft direkt den integrierten
+            WebRTC-Viewer von MediaMTX auf.
+
+            Beispiel:
+              http://<mediamtx-host>:8889/<path>
+
+            Funktioniert zuverlässig in LAN/VPN-Setups.
+          -->
           <iframe src="http://172.16.90.15:8889/cam54" scrolling="no"></iframe>
           <iframe src="http://172.16.90.15:8889/cam55" scrolling="no"></iframe>
           <iframe src="http://172.16.90.15:8889/cam56" scrolling="no"></iframe>
           <iframe src="http://172.16.90.15:8889/cam57" scrolling="no"></iframe>
       </body>
-
       </html>
 
 runcmd:
-  # Entfernen der Standard-Nginx-Konfiguration und Aktivieren der benutzerdefinierten Konfiguration
+  # ------------------------------------------------------------
+  # Aktivierung der NGINX-Konfiguration
+  # ------------------------------------------------------------
+
+  # Entfernt die Standard-Site von nginx
   - rm /etc/nginx/sites-enabled/default*
+
+  # Aktiviert die eigene Server-Konfiguration
   - ln -s /etc/nginx/sites-available/webserver.conf /etc/nginx/sites-enabled/
 
-  # Neustart des Nginx-Dienstes nach der Konfigurationsänderung
+  # Neustart von nginx, damit die Änderungen aktiv werden
   - systemctl restart nginx
 
-  # Anpassen der Berechtigungen für den Webordner
+  # Setzt saubere Besitzrechte für den Webroot
   - chown -R www-data:www-data /var/www/html/
