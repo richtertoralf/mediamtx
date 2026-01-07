@@ -25,6 +25,28 @@ Die Skripte sind bewusst einfach gehalten, lesen ausschließlich die MediaMTX-AP
 und greifen nicht in den laufenden Betrieb ein.
 Sie dienen als Werkzeuge, Beispiele und Ausgangspunkt für eigene Automatisierung oder Überwachung.
 
+## Weiterführendes Monitoring
+
+Für ein dauerhaftes, webbasiertes Monitoring von MediaMTX gibt es ein separates Projekt von mir:
+
+👉 MediaMTX Monitor
+https://github.com/richtertoralf/mediamtxMonitor
+
+Der MediaMTX Monitor baut auf der MediaMTX-API auf und stellt die Informationen zentral im Browser dar – ohne direkte API-Zugriffe durch Clients.
+
+Unterschied zu den Skripten in diesem Repository:
+
+Die hier enthaltenen Skripte sind CLI-Tools & Beispiele (ad-hoc, terminalbasiert).
+
+MediaMTX Monitor ist ein persistenter Monitoring-Dienst mit Web-Dashboard, JSON-API und Systemmetriken.
+
+Geeignet, wenn:
+
+Streams dauerhaft überwacht werden sollen
+
+mehrere Personen Zugriff auf Status & Metriken benötigen
+
+
 # mediamtx
 MediaMTX (ehemals rtsp-simple-server ) ist ein gebrauchsfertiger und unabhängiger Echtzeit-Medienserver und Medien-Proxy, der das Veröffentlichen, Lesen, Proxyen und Aufzeichnen von Video- und Audiostreams ermöglicht. Er ist als „Medienrouter“ ohne GUI konzipiert, der Medienströme von einem Ende zum anderen weiterleitet. 
 
