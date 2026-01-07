@@ -1,5 +1,30 @@
 Vor ein paar Jahren haben wir unseren Streamingserver für RTMP, SRT und RTSP noch selber geschrieben. Dazu haben wir ffmpeg und nginx mit dem rtmp-Modul genutzt. Um SRT zu nutzen musste ffmpeg noch extra compiliert und für den RaspberryPi optimiert werden.  Inzwischen gibt es in der OpenSource-Welt fürs Streamen von Videos richtig viele gute Tools. Eins davon ist der **mediamtx Mediaserver**. Ein weiteres sehr gutes Tool ist der **datarhei Restreamer**.
 
+## Inhalt dieses Repositories
+
+Dieses Repository enthält praxisnahe Hilfsskripte und Konfigurationsbeispiele rund um den Einsatz von MediaMTX im Alltag:
+
+### cloud-config
+Beispiel für eine cloud-init-Konfiguration, die einen einfachen Nginx-Webserver bereitstellt.
+Gedacht als schneller Viewer für MediaMTX-WebRTC- oder HLS-Streams (z. B. innerhalb eines VPNs).
+
+### mediamtx_aggregator.py
+Python-Skript zur Abfrage der MediaMTX-HTTP-API.
+Aggregiert Informationen zu aktiven Paths und SRT-Verbindungen (RTT, Empfangsrate, Link-Kapazität)
+und speichert diese konsolidiert als JSON – geeignet als Basis für eigenes Monitoring.
+
+### showActivePaths_table.sh
+Bash-Skript zur tabellarischen Anzeige aller aktiven MediaMTX-Paths
+(Quelle, Tracks, empfangene/gesendete Bytes, Reader).
+
+### srt-data-table.sh
+Interaktive Terminal-Übersicht über aktive SRT-Publish-Verbindungen inklusive
+Verbindungsstatus, RTT und Datenraten – hilfreich zur Live-Diagnose bei Events.
+
+Die Skripte sind bewusst einfach gehalten, lesen ausschließlich die MediaMTX-API
+und greifen nicht in den laufenden Betrieb ein.
+Sie dienen als Werkzeuge, Beispiele und Ausgangspunkt für eigene Automatisierung oder Überwachung.
+
 # mediamtx
 MediaMTX (ehemals rtsp-simple-server ) ist ein gebrauchsfertiger und unabhängiger Echtzeit-Medienserver und Medien-Proxy, der das Veröffentlichen, Lesen, Proxyen und Aufzeichnen von Video- und Audiostreams ermöglicht. Er ist als „Medienrouter“ ohne GUI konzipiert, der Medienströme von einem Ende zum anderen weiterleitet. 
 
