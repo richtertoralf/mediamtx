@@ -1,6 +1,5 @@
 #!/bin/bash
 
-#!/bin/bash
 # Live-Monitor für aktive SRT-Publish-Verbindungen in MediaMTX.
 #
 # - fragt /v3/srtconns/list zyklisch ab
