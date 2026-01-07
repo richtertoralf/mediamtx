@@ -168,6 +168,21 @@ Mit dem mediamtx-Server kannst du dir jetzt, dank WebRTC und iframe, ganz einfac
 </html>
 ```
 
+## MediaMTX API & Monitoring (optional)
+
+Neben dem eigentlichen Stream-Routing bietet MediaMTX eine umfangreiche HTTP-API.
+Diese erlaubt es, aktive Streams, Reader und SRT-Verbindungen inklusive
+Transportmetriken abzufragen.
+
+Das im Repository enthaltene Python-Skript zeigt exemplarisch,
+wie sich diese Informationen automatisiert erfassen und in einem
+konsolidierten JSON-Format ablegen lassen.
+
+Gedacht ist dies als Grundlage für eigenes Monitoring,
+z. B. zur Überwachung von Verbindungsqualität, Stream-Auslastung
+oder für spätere Visualisierungen.
+
+
 # datarhei restreamer
 Der Restreamer ist eine Streaming-Server-Lösung mit Benutzeroberfläche um RTMP- oder SRT-Streams zu YouTube, Twitch, Facebook, Vimeo oder andere Streaming-Lösungen wie Wowza weiterzuleiten. Zusätzlich besteht die Möglichkeit, den Stream auch direkt vom Server, per RTMP oder SRT abzurufen und es gibt eine einfache Webseite, wo Besucher den den Stream direkt anschauen können.    
 Hier eine schnelle Installationsvariante:  
