@@ -1,5 +1,18 @@
 #!/bin/bash
 
+#!/bin/bash
+# Übersicht aktiver MediaMTX-Streams über die HTTP-API.
+#
+# - ruft /v3/paths/list ab
+# - filtert nur aktive (ready == true) Streams
+# - zeigt Name, Source-Typ, Tracks, Rx/Tx-Bytes und Reader
+# - formatiert die Ausgabe tabellarisch für die Shell
+#
+# Gedacht als leichtgewichtiges CLI-Status-Tool für Betrieb,
+# Debugging und schnelle Checks ohne GUI oder Dashboard.
+# Benötigt: curl, jq
+
+
 API_URL="http://localhost:9997/v3/paths/list"
 
 echo "🔍 Aktive MediaMTX-Streams:"
