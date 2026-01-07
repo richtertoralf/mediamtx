@@ -1,5 +1,24 @@
 #!/bin/bash
 
+#!/bin/bash
+# Live-Monitor für aktive SRT-Publish-Verbindungen in MediaMTX.
+#
+# - fragt /v3/srtconns/list zyklisch ab
+# - zeigt nur SRT-Verbindungen im Zustand "publish"
+# - stellt Transportmetriken dar:
+#     * empfangene Daten (MB)
+#     * RTT (ms)
+#     * Empfangsrate (Mbps)
+#     * geschätzte Link-Kapazität (Mbps)
+# - farb-/statusreduzierte Bewertung der Verbindung (OK / LOW)
+#
+# Gedacht als Terminal-Monitor für Betrieb und Fehleranalyse
+# bei SRT-Ingests (Encoder, OBS, Raspberry Pi, Mobilfunk).
+#
+# Benötigt: curl, jq, awk
+# Abbruch mit Ctrl+C
+
+
 # Spaltenbreiten definieren
 col_widths=(6 16 9 28 10 10 10 10)  # Status, IP, State, Path, Recv(MB), RTT, RecvRate, LinkCap
 
