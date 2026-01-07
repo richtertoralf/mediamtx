@@ -1,6 +1,5 @@
 #!/bin/bash
 
-#!/bin/bash
 # Übersicht aktiver MediaMTX-Streams über die HTTP-API.
 #
 # - ruft /v3/paths/list ab
