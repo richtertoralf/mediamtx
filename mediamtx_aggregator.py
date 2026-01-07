@@ -1,5 +1,21 @@
 #!/usr/bin/env python3
 
+#!/usr/bin/env python3
+"""
+Beispielskript zur Abfrage der MediaMTX-HTTP-API.
+
+- liest aktive Paths (/v3/paths/list)
+- liest aktive SRT-Verbindungen (/v3/srtconns/list)
+- verknüpft beide Datensätze über den Path-Namen
+- aggregiert Stream- und Transportmetriken (Bytes, Reader, RTT, Bitraten)
+- schreibt das Ergebnis als JSON nach /tmp/mediamtx_streams.json
+
+Gedacht als einfache Grundlage für Monitoring, Debugging
+oder die Weiterverarbeitung in Dashboards.
+Nicht notwendig für den Betrieb von MediaMTX.
+"""
+
+
 import requests
 import json
 
