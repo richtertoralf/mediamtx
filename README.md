@@ -10,6 +10,9 @@ Dieses Repository enthält praxisnahe Hilfsskripte und Konfigurationsbeispiele r
 Beispiel für eine cloud-init-Konfiguration, die einen einfachen Nginx-Webserver bereitstellt.
 Gedacht als schneller Viewer für MediaMTX-WebRTC- oder HLS-Streams (z. B. innerhalb eines VPNs).
 
+### webviewer-setup.sh
+Bash-Skript für bestehende Ubuntu-/Debian-Hosts, das einen einfachen Nginx-Webserver als Viewer für vorhandene MediaMTX-Streams einrichtet. Das Skript ist didaktisch ähnlich zur cloud-init-Variante aufgebaut: zentrale Konfigurationsvariablen für Host, Ports, Protokolle und Stream-Pfade, automatische Erzeugung einer index.html mit mehreren iframe-Einbettungen sowie Aktivierung der passenden Nginx-Konfiguration. Es dient als leicht verständliches Beispiel, wie sich WebRTC- oder HLS-Streams schnell für Browserzugriff bereitstellen lassen, ohne dass der Host selbst Streaming übernimmt.
+
 ### mediamtx_aggregator.py
 Python-Skript zur Abfrage der MediaMTX-HTTP-API.
 Aggregiert Informationen zu aktiven Paths und SRT-Verbindungen (RTT, Empfangsrate, Link-Kapazität)
