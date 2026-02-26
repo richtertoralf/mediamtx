@@ -196,6 +196,33 @@ cat > /var/www/html/index.html <<EOF
 <head>
   <meta charset="UTF-8">
   <title>MediaMTX Stream Viewer</title>
+
+  <!--
+    Sehr einfaches Layout:
+    - mehrere Streams nebeneinander
+    - automatische Umbrüche je nach Fensterbreite
+    - bewusst schlicht gehalten, damit das Prinzip leicht verständlich bleibt
+  -->
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+      grid-gap: 10px;
+    }
+
+    iframe {
+      width: 100%;
+      height: 300px;
+      border: 1px solid #ccc;
+    }
+
+    h1, p, h2 {
+      margin: 10px;
+      font-family: Arial, sans-serif;
+    }
+  </style>
 </head>
 <body>
   <h1>MediaMTX Stream Viewer</h1>
@@ -206,8 +233,10 @@ EOF
 
 for STREAM in "${STREAMS[@]}"; do
   cat >> /var/www/html/index.html <<EOF
-  <h2>${STREAM}</h2>
-  <iframe src="${VIEW_BASE_URL}/${STREAM}" width="640" height="360"></iframe>
+  <div>
+    <h2>${STREAM}</h2>
+    <iframe src="${VIEW_BASE_URL}/${STREAM}" scrolling="no"></iframe>
+  </div>
 EOF
 done
 
