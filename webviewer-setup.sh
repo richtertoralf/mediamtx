@@ -2,52 +2,30 @@
 set -euo pipefail
 
 #
-# Bash-Skript für einen sehr einfachen Web-Viewer von MediaMTX-Streams
+# Bash-Skript für einen einfachen MediaMTX-Web-Viewer / Monitor
 #
 # Idee:
 # - Diese Maschine streamt NICHT selbst.
-# - Sie zeigt nur bereits vorhandene MediaMTX-Streams in einer HTML-Seite an.
-# - nginx liefert dafür nur eine statische index.html aus.
+# - Sie liefert nur eine statische index.html über nginx aus.
+# - Die eigentliche Logik steckt in der index.html aus dem Repository.
 #
 # Typischer Einsatz:
 # - internes Monitoring
-# - LAN oder VPN (z. B. WireGuard)
+# - LAN oder VPN
 # - Remote-Produktion
 #
 # Wichtig:
-# - Der Browser des Benutzers verbindet sich später DIREKT zu MediaMTX.
-# - nginx ist hier nur der "Rahmen" für die Viewer-Seite.
-# - Deshalb muss der Benutzer die MediaMTX-IP auch wirklich erreichen können.
+# - Dieses Skript erzeugt die HTML-Seite nicht mehr selbst.
+# - Stattdessen wird die Datei "index.html" aus dem Repository kopiert.
+# - Skript und index.html liegen im Repo flach im selben Verzeichnis.
 #
-# Nutzungsbeispiele - Streams vom Server holen
+# Beispiel:
+#   mediamtx/
+#   ├── webviewer-setup.sh
+#   └── index.html
 #
-# Streams können direkt vom MediaMTX-Server geholt und in einem Browser
-# angezeigt oder als Quelle in OBS eingebunden werden.
-#
-# Für Browser-Anzeige nutze ich gern WebRTC, weil ich damit aktuell
-# die geringsten Latenzen habe.
-#
-# Typische URLs für einen Stream mit dem Namen "mystream":
-#
-# WebRTC im Browser:
-#   http://localhost:8889/mystream
-#
-# HLS als Browserquelle:
-#   http://localhost:8888/mystream
-#
-# SRT, z. B. als Medienquelle in OBS Studio:
-#   srt://localhost:8890?streamid=read:mystream
-#
-# RTSP:
-#   rtsp://localhost:8554/mystream
-#
-# RTMP:
-#   rtmp://localhost/mystream
-#
-# Dieses Skript baut nur eine einfache HTML-Seite mit mehreren iframes.
-# Dafür ist in der Praxis WebRTC oder HLS sinnvoll.
-# SRT, RTSP und RTMP werden hier im Konfigurationsteil trotzdem mit erklärt,
-# damit ein Anfänger die verschiedenen Varianten von MediaMTX an einer Stelle sieht.
+# Dadurch bleibt das Bash-Skript einfach
+# und die HTML-/JavaScript-Datei kann separat gepflegt werden.
 #
 
 # Dieses Skript sollte als root ausgeführt werden.
@@ -59,84 +37,22 @@ if [ "${EUID}" -ne 0 ]; then
 fi
 
 # ------------------------------------------------------------
-# Zentrale Variablen für den Viewer
+# Pfade ermitteln
 # ------------------------------------------------------------
 #
-# Hier stehen die Werte, die man später am einfachsten ändern kann.
+# Das Skript bestimmt zuerst sein eigenes Verzeichnis.
+# Von dort wird später die index.html kopiert.
 #
-# Grundidee:
-# - Ein gemeinsamer MediaMTX-Host
-# - die üblichen Standard-Ports der verschiedenen Protokolle
-# - eine einfache Auswahl, welches Protokoll die HTML-Seite verwenden soll
-#
-# Wichtiger Unterschied:
-# - WebRTC und HLS sind für Browser / iframe geeignet
-# - SRT, RTSP und RTMP sind eher für OBS, VLC oder andere Player gedacht
-#
-# Typische Beispiele für einen Stream "cam54":
-#
-# WebRTC:
-#   http://10.10.11.108:8889/cam54
-#
-# HLS:
-#   http://10.10.11.108:8888/cam54
-#
-# SRT:
-#   srt://10.10.11.108:8890?streamid=read:cam54
-#
-# RTSP:
-#   rtsp://10.10.11.108:8554/cam54
-#
-# RTMP:
-#   rtmp://10.10.11.108/cam54
-#
-# Welche Variante soll die HTML-Seite verwenden?
-# Für Browser sinnvoll:
-#   VIEW_PROTOCOL="webrtc"
-# oder
-#   VIEW_PROTOCOL="hls"
-#
-MEDIAMTX_HOST="10.10.11.108"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SOURCE_INDEX="${SCRIPT_DIR}/index.html"
+TARGET_INDEX="/var/www/html/index.html"
 
-WEBRTC_PORT="8889"
-HLS_PORT="8888"
-SRT_PORT="8890"
-RTSP_PORT="8554"
-RTMP_PORT="1935"
-
-VIEW_PROTOCOL="webrtc"
-
-# Stream-Namen / Pfade
-# Im MediaMTX-Kontext ist der Stream-Name hier gleichzeitig der Pfad.
-STREAMS=(
-  "cam54"
-  "cam55"
-  "cam56"
-  "testpattern-clock"
-)
-
-# ------------------------------------------------------------
-# Aus dem gewählten Protokoll die Basis-URL für die HTML-Seite bauen
-# ------------------------------------------------------------
-#
-# Die HTML-Seite kann nur Browser-taugliche Varianten sinnvoll verwenden.
-# Deshalb erlauben wir hier nur:
-# - webrtc
-# - hls
-#
-case "${VIEW_PROTOCOL}" in
-  webrtc)
-    VIEW_BASE_URL="http://${MEDIAMTX_HOST}:${WEBRTC_PORT}"
-    ;;
-  hls)
-    VIEW_BASE_URL="http://${MEDIAMTX_HOST}:${HLS_PORT}"
-    ;;
-  *)
-    echo "Ungültiges VIEW_PROTOCOL: ${VIEW_PROTOCOL}"
-    echo "Erlaubt sind nur: webrtc oder hls"
-    exit 1
-    ;;
-esac
+# Prüfen, ob die index.html im selben Verzeichnis vorhanden ist
+if [ ! -f "${SOURCE_INDEX}" ]; then
+  echo "Fehler: ${SOURCE_INDEX} nicht gefunden."
+  echo "Lege webviewer-setup.sh und index.html im selben Verzeichnis ab."
+  exit 1
+fi
 
 # Paketlisten aktualisieren, damit die Installation sauber läuft
 apt-get update
@@ -149,7 +65,7 @@ apt-get install -y nginx
 # NGINX-Konfiguration
 # ------------------------------------------------------------
 # nginx liefert nur Dateien aus /var/www/html aus.
-# Dort wird später die index.html erzeugt.
+# Dort liegt später die index.html aus dem Repository.
 #
 cat > /etc/nginx/sites-available/webserver.conf <<'EOF'
 server {
@@ -174,79 +90,27 @@ EOF
 chmod 0644 /etc/nginx/sites-available/webserver.conf
 
 # ------------------------------------------------------------
-# index.html automatisch aus den Variablen erzeugen
+# index.html aus dem Repository kopieren
 # ------------------------------------------------------------
 #
 # Warum dieser Schritt?
 #
-# Statt IP-Adressen, Ports und Stream-Namen fest in HTML zu schreiben,
-# verwenden wir Bash-Variablen.
+# Früher wurde die HTML-Datei direkt im Bash-Skript erzeugt.
+# Jetzt liegt sie separat im Repository.
 #
 # Vorteil:
-# - Host nur an einer Stelle ändern
-# - Ports nur an einer Stelle ändern
-# - Protokoll nur an einer Stelle ändern
-# - Streams nur an einer Stelle ändern
+# - HTML, CSS und JavaScript bleiben besser lesbar
+# - Änderungen an der Webseite sind einfacher
+# - das Installationsskript bleibt kurz und verständlich
 #
-# Das ist das eigentliche Prinzip dieser Lösung.
-#
-cat > /var/www/html/index.html <<EOF
-<!DOCTYPE html>
-<html lang="de">
-<head>
-  <meta charset="UTF-8">
-  <title>MediaMTX Stream Viewer</title>
-
-  <!--
-    Sehr einfaches Layout:
-    - mehrere Streams nebeneinander
-    - automatische Umbrüche je nach Fensterbreite
-    - bewusst schlicht gehalten, damit das Prinzip leicht verständlich bleibt
-  -->
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
-      grid-gap: 10px;
-    }
-
-    iframe {
-      width: 100%;
-      height: 300px;
-      border: 1px solid #ccc;
-    }
-
-    h1, p, h2 {
-      margin: 10px;
-      font-family: Arial, sans-serif;
-    }
-  </style>
-</head>
-<body>
-  <h1>MediaMTX Stream Viewer</h1>
-  <p>Diese Seite zeigt vorhandene MediaMTX-Streams per iframe.</p>
-  <p>Aktives Browser-Protokoll: ${VIEW_PROTOCOL}</p>
-  <p>Basis-URL: ${VIEW_BASE_URL}</p>
-EOF
-
-for STREAM in "${STREAMS[@]}"; do
-  cat >> /var/www/html/index.html <<EOF
-  <div>
-    <h2>${STREAM}</h2>
-    <iframe src="${VIEW_BASE_URL}/${STREAM}" scrolling="no"></iframe>
-  </div>
-EOF
-done
-
-cat >> /var/www/html/index.html <<EOF
-</body>
-</html>
-EOF
+mkdir -p /var/www/html
+cp "${SOURCE_INDEX}" "${TARGET_INDEX}"
 
 # Besitzer des Web-Verzeichnisses sauber setzen
 chown -R www-data:www-data /var/www/html
+
+# Sinnvolle Dateirechte setzen
+chmod 0644 "${TARGET_INDEX}"
 
 # ------------------------------------------------------------
 # Webserver aktivieren
@@ -263,13 +127,9 @@ nginx -t && systemctl restart nginx
 
 echo
 echo "Fertig."
+echo "Die index.html wurde kopiert nach: ${TARGET_INDEX}"
 echo "Viewer-Seite: http://<dieser-host>/"
-echo "Aktives Browser-Protokoll: ${VIEW_PROTOCOL}"
-echo "Basis-URL für Browser: ${VIEW_BASE_URL}"
 echo
-echo "Weitere MediaMTX-Beispiele für einen Stream:"
-echo "  WebRTC: http://${MEDIAMTX_HOST}:${WEBRTC_PORT}/<stream>"
-echo "  HLS:    http://${MEDIAMTX_HOST}:${HLS_PORT}/<stream>"
-echo "  SRT:    srt://${MEDIAMTX_HOST}:${SRT_PORT}?streamid=read:<stream>"
-echo "  RTSP:   rtsp://${MEDIAMTX_HOST}:${RTSP_PORT}/<stream>"
-echo "  RTMP:   rtmp://${MEDIAMTX_HOST}/<stream>"
+echo "Wenn du die Webseite änderst, reicht später meist:"
+echo "  sudo cp ${SOURCE_INDEX} ${TARGET_INDEX}"
+echo "  sudo chown www-data:www-data ${TARGET_INDEX}"
