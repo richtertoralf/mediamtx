@@ -19,6 +19,24 @@ set -euo pipefail
 # - Stattdessen wird die Datei "index.html" aus dem Repository kopiert.
 # - Skript und index.html liegen im Repo flach im selben Verzeichnis.
 #
+# Wichtiger Zusatz für diese Monitor-Seite:
+# - Die index.html fragt die MediaMTX-Control-API ab:
+#     /v3/paths/list
+# - Dafür muss der Zugriff auf die API ausdrücklich erlaubt sein.
+# - Standardmäßig ist das oft nur für localhost freigegeben.
+#
+# Beispiel in /usr/local/etc/mediamtx.yml:
+#
+# authInternalUsers:
+# - user: any
+#   pass:
+#   ips: ['127.0.0.1', '::1', '10.10.11.0/24']
+#   permissions:
+#   - action: api
+#
+# Nur wenn der Browser bzw. das Client-Netz Zugriff auf die API hat,
+# kann die Seite die verfügbaren Streams automatisch erkennen.
+#
 # Beispiel:
 #   mediamtx/
 #   ├── webviewer-setup.sh
@@ -130,6 +148,10 @@ echo "Fertig."
 echo "Die index.html wurde kopiert nach: ${TARGET_INDEX}"
 echo "Viewer-Seite: http://<dieser-host>/"
 echo
-echo "Wenn du die Webseite änderst, reicht später meist:"
+echo "Wichtig:"
+echo "Die Monitor-Seite benötigt Zugriff auf die MediaMTX-Control-API (/v3/paths/list)."
+echo "Prüfe deshalb die Freigabe in /usr/local/etc/mediamtx.yml."
+echo
+echo "Wenn du die Webseite später änderst, reicht meist:"
 echo "  sudo cp ${SOURCE_INDEX} ${TARGET_INDEX}"
 echo "  sudo chown www-data:www-data ${TARGET_INDEX}"
