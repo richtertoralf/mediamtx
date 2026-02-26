@@ -1,34 +1,64 @@
 #cloud-config
 #
-# Cloud-Init Konfiguration für einen einfachen Web-Viewer
-# zur Anzeige von MediaMTX-Streams (WebRTC oder HLS) per iframe.
+# Cloud-Init für einen sehr einfachen Web-Viewer von MediaMTX-Streams
 #
-# Gedacht für:
-# - LAN- oder VPN-Umgebungen (z. B. WireGuard)
-# - internes Monitoring / Remote-Produktion
-# - keine öffentliche Internet-Exponierung
+# Idee:
+# - Diese Maschine streamt NICHT selbst.
+# - Sie zeigt nur bereits vorhandene MediaMTX-Streams in einer HTML-Seite an.
+# - nginx liefert dafür nur eine statische index.html aus.
 #
-# Dieses Setup stellt KEIN Streaming bereit,
-# sondern zeigt bereits existierende Streams an.
+# Typischer Einsatz:
+# - internes Monitoring
+# - LAN oder VPN (z. B. WireGuard)
+# - Remote-Produktion
+#
+# Wichtig:
+# - Der Browser des Benutzers verbindet sich später DIREKT zu MediaMTX.
+# - nginx ist hier nur der "Rahmen" für die Viewer-Seite.
+# - Deshalb muss der Benutzer die MediaMTX-IP auch wirklich erreichen können.
 #
 
-# System beim ersten Start aktualisieren
+# Paketlisten aktualisieren, damit die Installation sauber läuft
 package_update: true
 
-# Benötigte Pakete:
-# - nginx: einfacher Webserver für die Viewer-Seite
+# Benötigtes Paket:
+# - nginx: einfacher Webserver für die HTML-Seite
 packages:
   - nginx
 
 write_files:
   # ------------------------------------------------------------
+  # Zentrale Konfigurationsdatei für den Viewer
+  # ------------------------------------------------------------
+  # Hier stehen die Werte, die man später am einfachsten ändern kann:
+  #
+  # - MEDIAMTX_HOST: IP oder Hostname des MediaMTX-Servers
+  # - MEDIAMTX_PORT: Port des MediaMTX-WebRTC-Viewers
+  # - STREAM_1 ... STREAM_4: Namen/Pfade der Streams
+  #
+  # Im MediaMTX-Kontext ist der Stream-Name hier gleichzeitig der Pfad.
+  # Beispiel:
+  #   http://172.16.90.15:8889/cam54
+  #
+  # Dann ist:
+  #   STREAM_1=cam54
+  #
+  - path: /etc/webviewer.env
+    permissions: '0644'
+    content: |
+      MEDIAMTX_HOST=172.16.90.15
+      MEDIAMTX_PORT=8889
+
+      STREAM_1=cam54
+      STREAM_2=cam55
+      STREAM_3=cam56
+      STREAM_4=testpattern-clock
+
+  # ------------------------------------------------------------
   # NGINX-Konfiguration
   # ------------------------------------------------------------
-  # Ein minimaler Serverblock, der eine statische HTML-Seite
-  # unter Port 80 ausliefert.
-  #
-  # Der Webserver dient nur als "Rahmen" (iframe-Container)
-  # für MediaMTX-WebRTC- oder HLS-Streams.
+  # nginx liefert nur Dateien aus /var/www/html aus.
+  # Dort wird später die index.html erzeugt.
   #
   - path: /etc/nginx/sites-available/webserver.conf
     permissions: '0644'
@@ -38,11 +68,11 @@ write_files:
           listen 80 default_server;
           listen [::]:80 default_server;
 
-          # Dokumentenroot
+          # Verzeichnis der Webseite
           root /var/www/html;
-          index index.html index.htm index.nginx-debian.html;
+          index index.html;
 
-          # Catch-all (kein Domain-Name erforderlich)
+          # Catch-all: keine spezielle Domain nötig
           server_name _;
 
           # Statische Dateien ausliefern
@@ -51,84 +81,67 @@ write_files:
           }
       }
 
-  # ------------------------------------------------------------
-  # HTML-Seite: Stream-Übersicht
-  # ------------------------------------------------------------
-  # Diese Seite zeigt mehrere MediaMTX-Streams gleichzeitig
-  # in einem responsiven Grid an.
-  #
-  # Die Streams selbst kommen NICHT von nginx,
-  # sondern direkt von MediaMTX:
-  #   - WebRTC: Port 8889
-  #   - alternativ HLS: Port 8888
-  #
-  # Die IP-Adressen sind private LAN-/VPN-Adressen
-  # und setzen Konnektivität über WireGuard oder LAN voraus.
-  #
-  - path: /var/www/html/index.html
-    permissions: '0644'
-    content: |
-      <!DOCTYPE html>
-      <html lang="de">
-      <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-          <!--
-            Einfaches Grid-Layout:
-            - mehrere Streams nebeneinander
-            - keine JS-Abhängigkeiten
-          -->
-          <style>
-              body {
-                  margin: 0;
-                  padding: 0;
-                  display: grid;
-                  grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
-                  grid-gap: 10px;
-              }
-
-              iframe {
-                  width: 100%;
-                  height: 300px;
-                  border: 1px solid #ccc;
-              }
-          </style>
-
-          <title>MediaMTX Stream Monitor</title>
-      </head>
-
-      <body>
-          <!--
-            Einbettung von MediaMTX-WebRTC-Streams.
-            Jeder iframe ruft direkt den integrierten
-            WebRTC-Viewer von MediaMTX auf.
-
-            Beispiel:
-              http://<mediamtx-host>:8889/<path>
-
-            Funktioniert zuverlässig in LAN/VPN-Setups.
-          -->
-          <iframe src="http://172.16.90.15:8889/cam54" scrolling="no"></iframe>
-          <iframe src="http://172.16.90.15:8889/cam55" scrolling="no"></iframe>
-          <iframe src="http://172.16.90.15:8889/cam56" scrolling="no"></iframe>
-          <iframe src="http://172.16.90.15:8889/cam57" scrolling="no"></iframe>
-      </body>
-      </html>
-
 runcmd:
   # ------------------------------------------------------------
-  # Aktivierung der NGINX-Konfiguration
+  # Webserver aktivieren
   # ------------------------------------------------------------
 
-  # Entfernt die Standard-Site von nginx
-  - rm /etc/nginx/sites-enabled/default*
+  # Standard-Seite von nginx entfernen
+  - rm -f /etc/nginx/sites-enabled/default*
 
-  # Aktiviert die eigene Server-Konfiguration
-  - ln -s /etc/nginx/sites-available/webserver.conf /etc/nginx/sites-enabled/
+  # Eigene nginx-Konfiguration aktivieren
+  - ln -sfn /etc/nginx/sites-available/webserver.conf /etc/nginx/sites-enabled/webserver.conf
 
-  # Neustart von nginx, damit die Änderungen aktiv werden
+  # ------------------------------------------------------------
+  # index.html automatisch aus den Variablen erzeugen
+  # ------------------------------------------------------------
+  #
+  # Warum dieser Schritt?
+  #
+  # Statt IP-Adressen und Stream-Namen fest in HTML zu schreiben,
+  # lesen wir sie aus /etc/webviewer.env ein.
+  #
+  # Vorteil:
+  # - Host nur an einer Stelle ändern
+  # - Port nur an einer Stelle ändern
+  # - Streams nur an einer Stelle ändern
+  #
+  # Das ist das eigentliche Prinzip dieser Lösung.
+  #
+  - |
+    bash -c '
+    . /etc/webviewer.env
+
+    cat > /var/www/html/index.html <<EOF
+    <!DOCTYPE html>
+    <html lang="de">
+    <head>
+      <meta charset="UTF-8">
+      <title>MediaMTX Stream Viewer</title>
+    </head>
+    <body>
+      <h1>MediaMTX Stream Viewer</h1>
+      <p>Diese Seite zeigt vorhandene MediaMTX-Streams per iframe.</p>
+    EOF
+
+    for i in 1 2 3 4; do
+      eval STREAM=\${STREAM_${i}}
+      [ -n "$STREAM" ] || continue
+
+      cat >> /var/www/html/index.html <<EOF
+      <h2>${STREAM}</h2>
+      <iframe src="http://${MEDIAMTX_HOST}:${MEDIAMTX_PORT}/${STREAM}" width="640" height="360"></iframe>
+      EOF
+    done
+
+    cat >> /var/www/html/index.html <<EOF
+    </body>
+    </html>
+    EOF
+    '
+
+  # Besitzer des Web-Verzeichnisses sauber setzen
+  - chown -R www-data:www-data /var/www/html
+
+  # nginx-Konfiguration testen und nur dann neu starten, wenn sie gültig ist
   - nginx -t && systemctl restart nginx
-
-  # Setzt saubere Besitzrechte für den Webroot
-  - chown -R www-data:www-data /var/www/html/
