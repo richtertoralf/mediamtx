@@ -13,14 +13,12 @@
 #
 
 # System beim ersten Start aktualisieren
-package_upgrade: true
+package_update: true
 
 # Benötigte Pakete:
 # - nginx: einfacher Webserver für die Viewer-Seite
-# - wireguard: optionales VPN, um private IPs erreichbar zu machen
 packages:
   - nginx
-  - wireguard
 
 write_files:
   # ------------------------------------------------------------
@@ -130,7 +128,7 @@ runcmd:
   - ln -s /etc/nginx/sites-available/webserver.conf /etc/nginx/sites-enabled/
 
   # Neustart von nginx, damit die Änderungen aktiv werden
-  - systemctl restart nginx
+  - nginx -t && systemctl restart nginx
 
   # Setzt saubere Besitzrechte für den Webroot
   - chown -R www-data:www-data /var/www/html/
