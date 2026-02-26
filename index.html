@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MediaMTX Monitor</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 10px;
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      color: #222;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    .topbar {
+      margin-bottom: 12px;
+      padding: 10px;
+      background: #fff;
+      border: 1px solid #ccc;
+    }
+
+    .topbar-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .topbar button {
+      padding: 4px 8px;
+      font-size: 14px;
+    }
+
+    .muted {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+      gap: 10px;
+    }
+
+    .panel {
+      background: #fff;
+      border: 1px solid #ccc;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      padding: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      border-bottom: 1px solid #ddd;
+      background: #fafafa;
+    }
+
+    .controls label {
+      font-size: 14px;
+    }
+
+    .controls select,
+    .controls button {
+      padding: 4px 6px;
+      font-size: 14px;
+    }
+
+    .frame-title {
+      padding: 8px;
+      font-weight: bold;
+      border-bottom: 1px solid #eee;
+    }
+
+    iframe {
+      width: 100%;
+      height: 300px;
+      border: 0;
+      background: #fff;
+    }
+
+    .status {
+      padding: 8px;
+      font-size: 13px;
+      color: #555;
+      border-top: 1px solid #eee;
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <h1>MediaMTX Monitor</h1>
+    <div class="topbar-row">
+      <button id="refreshButton" type="button">Jetzt aktualisieren</button>
+      <span id="globalStatus">Initialisiere ...</span>
+    </div>
+    <div class="topbar-row muted">
+      <span id="pollInfo">Auto-Refresh: alle 30 Sekunden</span>
+    </div>
+  </div>
+
+  <div id="grid" class="grid"></div>
+
+  <script>
+    // ------------------------------------------------------------
+    // Zentrale Konfiguration
+    // ------------------------------------------------------------
+    // Die Seite und MediaMTX laufen in diesem Beispiel auf demselben Host.
+    // Deshalb wird der aktuelle Hostname des Browsers automatisch verwendet.
+    // ------------------------------------------------------------
+    const CURRENT_HOST = window.location.hostname;
+
+    const CONFIG = {
+      API_BASE: `http://${CURRENT_HOST}:9997`,
+      STREAM_HOST: CURRENT_HOST,
+      WEBRTC_PORT: '8889',
+      HLS_PORT: '8888',
+      POLL_MS: 30000,
+      PANEL_COUNT: 6,
+      DEFAULT_PROTOCOL: 'webrtc',
+      STORAGE_KEY: 'mediamtx-monitor-v2'
+    };
+
+    const state = {
+      streams: [],
+      panels: [],
+      initialAssignmentDone: false,
+      isRefreshing: false
+    };
+
+    function buildStreamUrl(protocol, streamName) {
+      if (!streamName) return '';
+      if (protocol === 'hls') {
+        return `http://${CONFIG.STREAM_HOST}:${CONFIG.HLS_PORT}/${streamName}`;
+      }
+      return `http://${CONFIG.STREAM_HOST}:${CONFIG.WEBRTC_PORT}/${streamName}`;
+    }
+
+    function savePanelSettings() {
+      const payload = state.panels.map(panel => ({
+        stream: panel.stream,
+        protocol: panel.protocol,
+        userChangedStream: panel.userChangedStream,
+        userChangedProtocol: panel.userChangedProtocol
+      }));
+
+      localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(payload));
+    }
+
+    function loadPanelSettings() {
+      try {
+        const raw = localStorage.getItem(CONFIG.STORAGE_KEY);
+        if (!raw) {
+          return [];
+        }
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function createPanel(index, savedPanel) {
+      const panelState = {
+        index,
+        stream: savedPanel?.stream || '',
+        protocol: savedPanel?.protocol || CONFIG.DEFAULT_PROTOCOL,
+        userChangedStream: Boolean(savedPanel?.userChangedStream),
+        userChangedProtocol: Boolean(savedPanel?.userChangedProtocol),
+        elements: {}
+      };
+
+      const panel = document.createElement('div');
+      panel.className = 'panel';
+
+      const controls = document.createElement('div');
+      controls.className = 'controls';
+
+      const streamLabel = document.createElement('label');
+      streamLabel.textContent = `Fenster ${index + 1} Stream:`;
+
+      const streamSelect = document.createElement('select');
+      streamSelect.innerHTML = '<option value="">-- kein Stream --</option>';
+      streamSelect.addEventListener('change', () => {
+        panelState.stream = streamSelect.value;
+        panelState.userChangedStream = true;
+        applyPanelSelection(panelState, true);
+      });
+
+      const protocolLabel = document.createElement('label');
+      protocolLabel.textContent = 'Protokoll:';
+
+      const protocolSelect = document.createElement('select');
+      protocolSelect.innerHTML = `
+        <option value="webrtc">WebRTC</option>
+        <option value="hls">HLS</option>
+      `;
+      protocolSelect.value = panelState.protocol;
+      protocolSelect.addEventListener('change', () => {
+        panelState.protocol = protocolSelect.value;
+        panelState.userChangedProtocol = true;
+        applyPanelSelection(panelState, true);
+      });
+
+      const autoButton = document.createElement('button');
+      autoButton.textContent = 'Auto';
+      autoButton.title = 'Fenster wieder automatisch belegen';
+      autoButton.addEventListener('click', () => {
+        panelState.userChangedStream = false;
+        panelState.userChangedProtocol = false;
+        autoAssignPanel(panelState);
+        applyPanelSelection(panelState, true);
+      });
+
+      controls.appendChild(streamLabel);
+      controls.appendChild(streamSelect);
+      controls.appendChild(protocolLabel);
+      controls.appendChild(protocolSelect);
+      controls.appendChild(autoButton);
+
+      const title = document.createElement('div');
+      title.className = 'frame-title';
+      title.textContent = `Fenster ${index + 1}`;
+
+      const iframe = document.createElement('iframe');
+      iframe.setAttribute('scrolling', 'no');
+
+      const status = document.createElement('div');
+      status.className = 'status';
+      status.textContent = 'Noch kein Stream ausgewählt';
+
+      panel.appendChild(controls);
+      panel.appendChild(title);
+      panel.appendChild(iframe);
+      panel.appendChild(status);
+
+      panelState.elements = {
+        panel,
+        streamSelect,
+        protocolSelect,
+        title,
+        iframe,
+        status
+      };
+
+      return panelState;
+    }
+
+    function populateStreamOptions(panelState) {
+      const selectEl = panelState.elements.streamSelect;
+      const previousValue = panelState.stream || '';
+
+      selectEl.innerHTML = '<option value="">-- kein Stream --</option>';
+
+      for (const stream of state.streams) {
+        const option = document.createElement('option');
+        option.value = stream;
+        option.textContent = stream;
+        selectEl.appendChild(option);
+      }
+
+      if (previousValue && !state.streams.includes(previousValue)) {
+        const missingOption = document.createElement('option');
+        missingOption.value = previousValue;
+        missingOption.textContent = `${previousValue} (nicht verfügbar)`;
+        selectEl.appendChild(missingOption);
+      }
+
+      selectEl.value = previousValue;
+      panelState.elements.protocolSelect.value = panelState.protocol;
+    }
+
+    function updatePanelMeta(panelState) {
+      const titleText = panelState.stream
+        ? `Fenster ${panelState.index + 1}: ${panelState.stream} (${panelState.protocol})`
+        : `Fenster ${panelState.index + 1}: kein Stream`;
+
+      panelState.elements.title.textContent = titleText;
+
+      if (!panelState.stream) {
+        panelState.elements.status.textContent = 'Kein Stream ausgewählt';
+        return;
+      }
+
+      const url = buildStreamUrl(panelState.protocol, panelState.stream);
+      const available = state.streams.includes(panelState.stream);
+
+      if (available) {
+        panelState.elements.status.textContent = `Quelle: ${url}`;
+      } else {
+        panelState.elements.status.textContent = `Gewählter Stream ist aktuell nicht verfügbar: ${panelState.stream}`;
+      }
+    }
+
+    function applyPanelSelection(panelState, persist = false) {
+      populateStreamOptions(panelState);
+      updatePanelMeta(panelState);
+
+      if (!panelState.stream) {
+        panelState.elements.iframe.removeAttribute('src');
+        if (persist) savePanelSettings();
+        return;
+      }
+
+      const url = buildStreamUrl(panelState.protocol, panelState.stream);
+      const currentSrc = panelState.elements.iframe.getAttribute('src') || '';
+      if (currentSrc !== url) {
+        panelState.elements.iframe.setAttribute('src', url);
+      }
+
+      if (persist) {
+        savePanelSettings();
+      }
+    }
+
+    function refreshPanelOptionsOnly() {
+      for (const panelState of state.panels) {
+        populateStreamOptions(panelState);
+        updatePanelMeta(panelState);
+      }
+    }
+
+    function autoAssignPanel(panelState) {
+      const automaticStream = state.streams[panelState.index] || '';
+      panelState.stream = automaticStream;
+      if (!panelState.userChangedProtocol) {
+        panelState.protocol = CONFIG.DEFAULT_PROTOCOL;
+      }
+    }
+
+    function performInitialAssignment() {
+      for (const panelState of state.panels) {
+        if (!panelState.userChangedStream && !panelState.stream) {
+          autoAssignPanel(panelState);
+        }
+        applyPanelSelection(panelState, false);
+      }
+      state.initialAssignmentDone = true;
+      savePanelSettings();
+    }
+
+    function setGlobalStatus(message) {
+      document.getElementById('globalStatus').textContent = message;
+    }
+
+    function setRefreshButtonBusy(isBusy) {
+      const button = document.getElementById('refreshButton');
+      button.disabled = isBusy;
+      button.textContent = isBusy ? 'Aktualisiere ...' : 'Jetzt aktualisieren';
+    }
+
+    async function fetchStreams() {
+      const url = `${CONFIG.API_BASE}/v3/paths/list`;
+      const response = await fetch(url, { cache: 'no-store' });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      const readyStreams = (data.items || [])
+        .filter(item => item.ready === true)
+        .map(item => item.name)
+        .sort();
+
+      state.streams = readyStreams;
+      const now = new Date().toLocaleTimeString('de-DE');
+      setGlobalStatus(`Streams: ${readyStreams.length} · Letzte Aktualisierung: ${now}`);
+
+      if (!state.initialAssignmentDone) {
+        performInitialAssignment();
+      } else {
+        refreshPanelOptionsOnly();
+      }
+    }
+
+    async function refreshNow() {
+      if (state.isRefreshing) {
+        return;
+      }
+
+      state.isRefreshing = true;
+      setRefreshButtonBusy(true);
+
+      try {
+        await fetchStreams();
+      } catch (error) {
+        setGlobalStatus(`API-Fehler: ${error.message}`);
+      } finally {
+        state.isRefreshing = false;
+        setRefreshButtonBusy(false);
+      }
+    }
+
+    async function refreshLoop() {
+      await refreshNow();
+      window.setTimeout(refreshLoop, CONFIG.POLL_MS);
+    }
+
+    function init() {
+      document.getElementById('pollInfo').textContent = `Auto-Refresh: alle ${CONFIG.POLL_MS / 1000} Sekunden`;
+      document.getElementById('refreshButton').addEventListener('click', refreshNow);
+
+      const savedPanels = loadPanelSettings();
+      const grid = document.getElementById('grid');
+
+      for (let i = 0; i < CONFIG.PANEL_COUNT; i += 1) {
+        const panelState = createPanel(i, savedPanels[i]);
+        state.panels.push(panelState);
+        grid.appendChild(panelState.elements.panel);
+      }
+
+      refreshLoop();
+    }
+
+    init();
+  </script>
+</body>
+</html>
