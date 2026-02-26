@@ -38,7 +38,7 @@ write_files:
   #
   # Im MediaMTX-Kontext ist der Stream-Name hier gleichzeitig der Pfad.
   # Beispiel:
-  #   http://172.16.90.15:8889/cam54
+  #   http://10.10.11.108:8889/cam54
   #
   # Dann ist:
   #   STREAM_1=cam54
@@ -46,7 +46,7 @@ write_files:
   - path: /etc/webviewer.env
     permissions: '0644'
     content: |
-      MEDIAMTX_HOST=172.16.90.15
+      MEDIAMTX_HOST=10.10.11.108
       MEDIAMTX_PORT=8889
 
       STREAM_1=cam54
